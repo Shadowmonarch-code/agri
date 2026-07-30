@@ -1,0 +1,718 @@
+     1→"use client";
+     2→
+     3→import React, { useState } from "react";
+     4→import { motion } from "framer-motion";
+     5→import {
+     6→  Flame,
+     7→  Trophy,
+     8→  Clock,
+     9→  Target,
+    10→  TrendingUp,
+    11→  BookOpen,
+    12→  FileText,
+    13→  ClipboardList,
+    14→  Download,
+    15→  Star,
+    16→  Calendar,
+    17→  ArrowRight,
+    18→  Play,
+    19→  CheckCircle2,
+    20→  Award,
+    21→  Coins,
+    22→  Zap,
+    23→  ChevronRight,
+    24→  BarChart3,
+    25→  Brain,
+    26→  Lightbulb,
+    27→  BookMarked,
+    28→} from "lucide-react";
+    29→
+    30→import { useAuth } from "@/components/auth/auth-provider";
+    31→import { Button } from "@/components/ui/button";
+    32→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    33→import { Badge } from "@/components/ui/badge";
+    34→import { Progress } from "@/components/ui/progress";
+    35→import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+    36→import { Separator } from "@/components/ui/separator";
+    37→import { Skeleton } from "@/components/ui/skeleton";
+    38→import { departments } from "@/data/departments";
+    39→import { competitiveExams } from "@/data/exams";
+    40→
+    41→// Types
+    42→interface DashboardStats {
+    43→  testsTaken: number;
+    44→  averageScore: number;
+    45→  studyHours: number;
+    46→  rank: number;
+    47→}
+    48→
+    49→interface CourseProgress {
+    50→  id: string;
+    51→  title: string;
+    52→  department: string;
+    53→  progress: number;
+    54→  totalLessons: number;
+    55→  completedLessons: number;
+    56→  thumbnail?: string;
+    57→}
+    58→
+    59→interface ActivityItem {
+    60→  id: string;
+    61→  type: "test" | "course" | "achievement" | "download" | "bookmark";
+    62→  title: string;
+    63→  description: string;
+    64→  timestamp: string;
+    65→  icon: React.ReactNode;
+    66→}
+    67→
+    68→interface ExamCountdown {
+    69→  id: string;
+    70→  name: string;
+    71→  date: string;
+    72→  daysLeft: number;
+    73→  color: string;
+    74→  icon: string;
+    75→}
+    76→
+    77→// Mock data generators
+    78→const getDashboardStats = (): DashboardStats => ({
+    79→  testsTaken: 47,
+    80→  averageScore: 78.5,
+    81→  studyHours: 124,
+    82→  rank: 156,
+    83→});
+    84→
+    85→const getEnrolledCourses = (): CourseProgress[] => [
+    86→  {
+    87→    id: "1",
+    88→    title: "Principles of Agronomy",
+    89→    department: "agriculture",
+    90→    progress: 72,
+    91→    totalLessons: 24,
+    92→    completedLessons: 17,
+    93→  },
+    94→  {
+    95→    id: "2",
+    96→    title: "Crop Physiology",
+    97→    department: "agriculture",
+    98→    progress: 45,
+    99→    totalLessons: 18,
+   100→    completedLessons: 8,
+   101→  },
+   102→  {
+   103→    id: "3",
+   104→    title: "Soil Science Fundamentals",
+   105→    department: "soil-science",
+   106→    progress: 90,
+   107→    totalLessons: 20,
+   108→    completedLessons: 18,
+   109→  },
+   110→];
+   111→
+   112→const getRecentActivity = (): ActivityItem[] => [
+   113→  {
+   114→    id: "1",
+   115→    type: "test",
+   116→    title: "Completed Agronomy Quiz",
+   117→    description: "Scored 85% on Chapter 5 quiz",
+   118→    timestamp: "2 hours ago",
+   119→    icon: <ClipboardList className="w-4 h-4 text-agri-green" />,
+   120→  },
+   121→  {
+   122→    id: "2",
+   123→    type: "course",
+   124→    title: "Started New Lesson",
+   125→    description: "Irrigation Management - Module 3",
+   126→    timestamp: "5 hours ago",
+   127→    icon: <Play className="w-4 h-4 text-blue-500" />,
+   128→  },
+   129→  {
+   130→    id: "3",
+   131→    type: "achievement",
+   132→    title: "Earned Badge!",
+   133→    description: "7-Day Study Streak Champion",
+   134→    timestamp: "1 day ago",
+   135→    icon: <Award className="w-4 h-4 text-agri-gold" />,
+   136→  },
+   137→  {
+   138→    id: "4",
+   139→    type: "download",
+   140→    title: "Downloaded Material",
+   141→    description: "ICAR JRF Previous Papers (2020-2024)",
+   142→    timestamp: "2 days ago",
+   143→    icon: <Download className="w-4 h-4 text-purple-500" />,
+   144→  },
+   145→  {
+   146→    id: "5",
+   147→    type: "bookmark",
+   148→    title: "Bookmarked Resource",
+   149→    description: "Weed Management - Quick Guide PDF",
+   150→    timestamp: "3 days ago",
+   151→    icon: <Star className="w-4 h-4 text-agri-gold" />,
+   152→  },
+   153→];
+   154→
+   155→const getExamCountdowns = (): ExamCountdown[] => [
+   156→  {
+   157→    id: "1",
+   158→    name: "ICAR JRF 2025",
+   159→    date: "June 15, 2025",
+   160→    daysLeft: 127,
+   161→    color: "#2E7D32",
+   162→    icon: "🎓",
+   163→  },
+   164→  {
+   165→    id: "2",
+   166→    name: "AIEEA UG 2025",
+   167→    date: "July 1, 2025",
+   168→    daysLeft: 143,
+   169→    color: "#E65100",
+   170→    icon: "🌾",
+   171→  },
+   172→  {
+   173→    id: "3",
+   174→    name: "CSIR NET Life Sciences",
+   175→    date: "August 10, 2025",
+   176→    daysLeft: 183,
+   177→    color: "#00695C",
+   178→    icon: "🧪",
+   179→  },
+   180→];
+   181→
+   182→const getRecommendedMaterials = (departmentId?: string) => {
+   183→  const dept = departments.find((d) => d.id === departmentId);
+   184→  return [
+   185→    {
+   186→      id: "1",
+   187→      title: `${dept?.name || "Agriculture"} Complete Notes`,
+   188→      type: "Notes",
+   189→      downloads: "12.5K",
+   190→      rating: 4.8,
+   191→    },
+   192→    {
+   193→      id: "2",
+   194→      title: "Previous Year Question Papers (2019-2024)",
+   195→      type: "Papers",
+   196→      downloads: "25K+",
+   197→      rating: 4.9,
+   198→    },
+   199→    {
+   200→      id: "3",
+   201→      title: "Quick Revision Formula Sheet",
+   202→      type: "Formula",
+   203→      downloads: "8.2K",
+   204→      rating: 4.7,
+   205→    },
+   206→  ];
+   207→};
+   208→
+   209→// Weekly progress data for chart
+   210→const weeklyData = [
+   211→  { day: "Mon", value: 65 },
+   212→  { day: "Tue", value: 80 },
+   213→  { day: "Wed", value: 45 },
+   214→  { day: "Thu", value: 90 },
+   215→  { day: "Fri", value: 70 },
+   216→  { day: "Sat", value: 85 },
+   217→  { day: "Sun", value: 55 },
+   218→];
+   219→
+   220→export function UserDashboard() {
+   221→  const { user, isLoading } = useAuth();
+   222→  const [activeTab, setActiveTab] = useState<"week" | "month">("week");
+   223→
+   224→  if (!user && !isLoading) {
+   225→    return null; // Don't render dashboard for unauthenticated users
+   226→  }
+   227→
+   228→  // Show loading skeleton while checking auth
+   229→  if (isLoading || !user) {
+   230→    return (
+   231→      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+   232→        <div className="max-w-7xl mx-auto space-y-6">
+   233→          <Skeleton className="h-32 w-full rounded-xl" />
+   234→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   235→            {[...Array(4)].map((_, i) => (
+   236→              <Skeleton key={i} className="h-28 rounded-xl" />
+   237→            ))}
+   238→          </div>
+   239→          <Skeleton className="h-64 w-full rounded-xl" />
+   240→        </div>
+   241→      </div>
+   242→    );
+   243→  }
+   244→
+   245→  const stats = getDashboardStats();
+   246→  const courses = getEnrolledCourses();
+   247→  const activities = getRecentActivity();
+   248→  const examCountdowns = getExamCountdowns();
+   249→  const recommendedMaterials = getRecommendedMaterials(user.department);
+   250→
+   251→  // Get greeting based on time of day
+   252→  const getGreeting = () => {
+   253→    const hour = new Date().getHours();
+   254→    if (hour < 12) return "Good Morning";
+   255→    if (hour < 17) return "Good Afternoon";
+   256→    return "Good Evening";
+   257→  };
+   258→
+   259→  // Get user initials
+   260→  const getInitials = (name: string) =>
+   261→    name
+   262→      .split(" ")
+   263→      .map((n) => n[0])
+   264→      .join("")
+   265→      .toUpperCase()
+   266→      .slice(0, 2);
+   267→
+   268→  return (
+   269→    <div className="min-h-screen bg-background">
+   270→      {/* Background decoration */}
+   271→      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+   272→        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-agri-green/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+   273→        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-agri-lime/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+   274→      </div>
+   275→
+   276→      <div className="relative max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+   277→        {/* Welcome Banner */}
+   278→        <motion.div
+   279→          initial={{ opacity: 0, y: 20 }}
+   280→          animate={{ opacity: 1, y: 0 }}
+   281→          transition={{ duration: 0.5 }}
+   282→          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-agri-green via-agri-green-light to-agri-lime p-6 sm:p-8 text-white"
+   283→        >
+   284→          {/* Decorative elements */}
+   285→          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4" />
+   286→          <div className="absolute bottom-0 left-1/2 w-48 h-48 bg-white/5 rounded-full translate-y-1/2" />
+   287→
+   288→          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+   289→            <div className="flex items-center gap-4">
+   290→              <Avatar className="h-16 w-16 border-3 border-white/30">
+   291→                <AvatarImage src={user.avatar} alt={user.name} />
+   292→                <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
+   293→                  {getInitials(user.name)}
+   294→                </AvatarFallback>
+   295→              </Avatar>
+   296→
+   297→              <div>
+   298→                <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+   299→                  {getGreeting()}, {user.name.split(" ")[0]}! 👋
+   300→                </h1>
+   301→                <p className="text-white/80 text-sm sm:text-base">
+   302→                  Ready to continue your ICAR preparation journey?
+   303→                </p>
+   304→              </div>
+   305→            </div>
+   306→
+   307→            {/* Streak & Stats */}
+   308→            <div className="flex items-center gap-4">
+   309→              <div className="text-center px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm">
+   310→                <Flame className="w-6 h-6 mx-auto mb-1 text-orange-300" />
+   311→                <p className="text-2xl font-bold">{user.streak}</p>
+   312→                <p className="text-xs text-white/70">Day Streak</p>
+   313→              </div>
+   314→              <div className="text-center px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm">
+   315→                <Coins className="w-6 h-6 mx-auto mb-1 text-yellow-300" />
+   316→                <p className="text-2xl font-bold">{user.coins.toLocaleString()}</p>
+   317→                <p className="text-xs text-white/70">Coins</p>
+   318→              </div>
+   319→              <div className="text-center px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm hidden sm:block">
+   320→                <Zap className="w-6 h-6 mx-auto mb-1 text-purple-300" />
+   321→                <p className="text-2xl font-bold">{(user.xp / 1000).toFixed(1)}K</p>
+   322→                <p className="text-xs text-white/70">XP</p>
+   323→              </div>
+   324→            </div>
+   325→          </div>
+   326→        </motion.div>
+   327→
+   328→        {/* Stats Cards */}
+   329→        <motion.div
+   330→          initial={{ opacity: 0, y: 20 }}
+   331→          animate={{ opacity: 1, y: 0 }}
+   332→          transition={{ duration: 0.5, delay: 0.1 }}
+   333→          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+   334→        >
+   335→          <Card className="card-hover border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+   336→            <CardContent className="p-5">
+   337→              <div className="flex items-center justify-between mb-3">
+   338→                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+   339→                  <ClipboardList className="w-5 h-5 text-blue-500" />
+   340→                </div>
+   341→                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+   342→                  <TrendingUp className="w-3 h-3" /> +12%
+   343→                </span>
+   344→              </div>
+   345→              <p className="text-2xl font-bold text-foreground">{stats.testsTaken}</p>
+   346→              <p className="text-sm text-muted-foreground">Tests Taken</p>
+   347→            </CardContent>
+   348→          </Card>
+   349→
+   350→          <Card className="card-hover border-0 shadow-md bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20">
+   351→            <CardContent className="p-5">
+   352→              <div className="flex items-center justify-between mb-3">
+   353→                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+   354→                  <Target className="w-5 h-5 text-emerald-500" />
+   355→                </div>
+   356→                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+   357→                  <TrendingUp className="w-3 h-3" /> +5%
+   358→                </span>
+   359→              </div>
+   360→              <p className="text-2xl font-bold text-foreground">{stats.averageScore}%</p>
+   361→              <p className="text-sm text-muted-foreground">Average Score</p>
+   362→            </CardContent>
+   363→          </Card>
+   364→
+   365→          <Card className="card-hover border-0 shadow-md bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+   366→            <CardContent className="p-5">
+   367→              <div className="flex items-center justify-between mb-3">
+   368→                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+   369→                  <Clock className="w-5 h-5 text-purple-500" />
+   370→                </div>
+   371→                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+   372→                  <TrendingUp className="w-3 h-3" /> +8h
+   373→                </span>
+   374→              </div>
+   375→              <p className="text-2xl font-bold text-foreground">{stats.studyHours}h</p>
+   376→              <p className="text-sm text-muted-foreground">Study Hours</p>
+   377→            </CardContent>
+   378→          </Card>
+   379→
+   380→          <Card className="card-hover border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
+   381→            <CardContent className="p-5">
+   382→              <div className="flex items-center justify-between mb-3">
+   383→                <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+   384→                  <Trophy className="w-5 h-5 text-amber-500" />
+   385→                </div>
+   386→                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+   387→                  <TrendingUp className="w-3 h-3" /> +23
+   388→                </span>
+   389→              </div>
+   390→              <p className="text-2xl font-bold text-foreground">#{stats.rank}</p>
+   391→              <p className="text-sm text-muted-foreground">Your Rank</p>
+   392→            </CardContent>
+   393→          </Card>
+   394→        </motion.div>
+   395→
+   396→        {/* Main Content Grid */}
+   397→        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   398→          {/* Left Column - Progress & Courses */}
+   399→          <div className="lg:col-span-2 space-y-6">
+   400→            {/* Progress Chart */}
+   401→            <motion.div
+   402→              initial={{ opacity: 0, y: 20 }}
+   403→              animate={{ opacity: 1, y: 0 }}
+   404→              transition={{ duration: 0.5, delay: 0.2 }}
+   405→            >
+   406→              <Card className="border-0 shadow-md">
+   407→                <CardHeader className="pb-2">
+   408→                  <div className="flex items-center justify-between">
+   409→                    <CardTitle className="text-lg flex items-center gap-2">
+   410→                      <BarChart3 className="w-5 h-5 text-agri-green" />
+   411→                      Study Progress
+   412→                    </CardTitle>
+   413→                    <div className="flex bg-muted rounded-lg p-0.5">
+   414→                      <button
+   415→                        onClick={() => setActiveTab("week")}
+   416→                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+   417→                          activeTab === "week"
+   418→                            ? "bg-background shadow-sm text-foreground"
+   419→                            : "text-muted-foreground hover:text-foreground"
+   420→                        }`}
+   421→                      >
+   422→                        Week
+   423→                      </button>
+   424→                      <button
+   425→                        onClick={() => setActiveTab("month")}
+   426→                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+   427→                          activeTab === "month"
+   428→                            ? "bg-background shadow-sm text-foreground"
+   429→                            : "text-muted-foreground hover:text-foreground"
+   430→                        }`}
+   431→                      >
+   432→                        Month
+   433→                      </button>
+   434→                    </div>
+   435→                  </div>
+   436→                </CardHeader>
+   437→                <CardContent>
+   438→                  {/* Simple bar chart visualization */}
+   439→                  <div className="flex items-end justify-between gap-2 h-40 mt-4">
+   440→                    {weeklyData.map((item, index) => (
+   441→                      <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
+   442→                        <motion.div
+   443→                          initial={{ height: 0 }}
+   444→                          animate={{ height: `${item.value}%` }}
+   445→                          transition={{ duration: 0.5, delay: index * 0.1 }}
+   446→                          className={`w-full rounded-t-md min-h-[8px] ${
+   447→                            item.value >= 80
+   448→                              ? "bg-agri-green"
+   449→                              : item.value >= 60
+   450→                              ? "bg-agri-lime"
+   451→                              : item.value >= 40
+   452→                              ? "bg-agri-gold"
+   453→                              : "bg-gray-300"
+   454→                          }`}
+   455→                        />
+   456→                        <span className="text-xs text-muted-foreground font-medium">{item.day}</span>
+   457→                      </div>
+   458→                    ))}
+   459→                  </div>
+   460→                  
+   461→                  {/* Summary */}
+   462→                  <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+   463→                    <div>
+   464→                      <p className="text-lg font-semibold text-agri-green">70%</p>
+   465→                      <p className="text-xs text-muted-foreground">Avg. Completion</p>
+   466→                    </div>
+   467→                    <div>
+   468→                      <p className="text-lg font-semibold text-agri-green">14.2h</p>
+   469→                      <p className="text-xs text-muted-foreground">This Week</p>
+   470→                    </div>
+   471→                    <div>
+   472→                      <p className="text-lg font-semibold text-agri-green">Top 15%</p>
+   473→                      <p className="text-xs text-muted-foreground">Performance</p>
+   474→                    </div>
+   475→                  </div>
+   476→                </CardContent>
+   477→              </Card>
+   478→            </motion.div>
+   479→
+   480→            {/* Enrolled Courses */}
+   481→            <motion.div
+   482→              initial={{ opacity: 0, y: 20 }}
+   483→              animate={{ opacity: 1, y: 0 }}
+   484→              transition={{ duration: 0.5, delay: 0.3 }}
+   485→            >
+   486→              <Card className="border-0 shadow-md">
+   487→                <CardHeader className="pb-2">
+   488→                  <div className="flex items-center justify-between">
+   489→                    <CardTitle className="text-lg flex items-center gap-2">
+   490→                      <BookOpen className="w-5 h-5 text-agri-green" />
+   491→                      Enrolled Courses
+   492→                    </CardTitle>
+   493→                    <Button variant="ghost" size="sm" className="text-agri-green hover:text-agri-green-light">
+   494→                      View All <ChevronRight className="w-4 h-4 ml-1" />
+   495→                    </Button>
+   496→                  </div>
+   497→                </CardHeader>
+   498→                <CardContent className="space-y-4">
+   499→                  {courses.map((course) => (
+   500→                    <div
+   501→                      key={course.id}
+   502→                      className="group p-4 rounded-xl bg-muted/50 hover:bg-muted transition-all cursor-pointer"
+   503→                    >
+   504→                      <div className="flex items-start gap-4">
+   505→                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-agri-green to-agri-lime flex items-center justify-center flex-shrink-0">
+   506→                          <BookOpen className="w-6 h-6 text-white" />
+   507→                        </div>
+   508→                        <div className="flex-1 min-w-0">
+   509→                          <h4 className="font-semibold text-sm group-hover:text-agri-green transition-colors truncate">
+   510→                            {course.title}
+   511→                          </h4>
+   512→                          <p className="text-xs text-muted-foreground mt-0.5">
+   513→                            {departments.find((d) => d.id === course.department)?.name}
+   514→                          </p>
+   515→                          
+   516→                          <div className="mt-3 space-y-1.5">
+   517→                            <div className="flex items-center justify-between text-xs">
+   518→                              <span className="text-muted-foreground">
+   519→                                {course.completedLessons}/{course.totalLessons} lessons
+   520→                              </span>
+   521→                              <span className="font-medium text-agri-green">{course.progress}%</span>
+   522→                            </div>
+   523→                            <Progress value={course.progress} className="h-1.5" />
+   524→                          </div>
+   525→                        </div>
+   526→                        
+   527→                        <Button
+   528→                          size="sm"
+   529→                          variant="outline"
+   530→                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+   531→                        >
+   532→                          Continue
+   533→                        </Button>
+   534→                      </div>
+   535→                    </div>
+   536→                  ))}
+   537→                </CardContent>
+   538→              </Card>
+   539→            </motion.div>
+   540→
+   541→            {/* Quick Actions */}
+   542→            <motion.div
+   543→              initial={{ opacity: 0, y: 20 }}
+   544→              animate={{ opacity: 1, y: 0 }}
+   545→              transition={{ duration: 0.5, delay: 0.4 }}
+   546→              className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+   547→            >
+   548→              {[
+   549→                { icon: Brain, label: "Take Test", color: "bg-blue-500/10 text-blue-500" },
+   550→                { icon: BookOpen, label: "Browse Materials", color: "bg-agri-green/10 text-agri-green" },
+   551→                { icon: BookMarked, label: "My Notes", color: "bg-purple-500/10 text-purple-500" },
+   552→                { icon: Lightbulb, label: "Daily Quiz", color: "bg-amber-500/10 text-amber-500" },
+   553→              ].map((action) => (
+   554→                <button
+   555→                  key={action.label}
+   556→                  className="p-4 rounded-xl bg-card border shadow-sm hover:shadow-md transition-all group"
+   557→                >
+   558→                  <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform`}>
+   559→                    <action.icon className="w-5 h-5" />
+   560→                  </div>
+   561→                  <p className="text-xs font-medium text-center">{action.label}</p>
+   562→                </button>
+   563→              ))}
+   564→            </motion.div>
+   565→          </div>
+   566→
+   567→          {/* Right Column - Activity & Exams */}
+   568→          <div className="space-y-6">
+   569→            {/* Upcoming Exams */}
+   570→            <motion.div
+   571→              initial={{ opacity: 0, x: 20 }}
+   572→              animate={{ opacity: 1, x: 0 }}
+   573→              transition={{ duration: 0.5, delay: 0.3 }}
+   574→            >
+   575→              <Card className="border-0 shadow-md">
+   576→                <CardHeader className="pb-2">
+   577→                  <CardTitle className="text-lg flex items-center gap-2">
+   578→                    <Calendar className="w-5 h-5 text-agri-green" />
+   579→                    Upcoming Exams
+   580→                  </CardTitle>
+   581→                </CardHeader>
+   582→                <CardContent className="space-y-3">
+   583→                  {examCountdowns.map((exam) => (
+   584→                    <div
+   585→                      key={exam.id}
+   586→                      className="p-3 rounded-xl border hover:border-agri-green/30 transition-all"
+   587→                    >
+   588→                      <div className="flex items-center gap-3">
+   589→                        <span className="text-2xl">{exam.icon}</span>
+   590→                        <div className="flex-1 min-w-0">
+   591→                          <h4 className="font-medium text-sm truncate">{exam.name}</h4>
+   592→                          <p className="text-xs text-muted-foreground">{exam.date}</p>
+   593→                        </div>
+   594→                        <div className="text-right">
+   595→                          <p className="text-lg font-bold" style={{ color: exam.color }}>
+   596→                            {exam.daysLeft}
+   597→                          </p>
+   598→                          <p className="text-xs text-muted-foreground">days left</p>
+   599→                        </div>
+   600→                      </div>
+   601→                      
+   602→                      {/* Countdown bar */}
+   603→                      <div className="mt-2">
+   604→                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+   605→                          <motion.div
+   606→                            initial={{ width: 0 }}
+   607→                            animate={{
+   608→                              width: `${Math.max(0, 100 - (exam.daysLeft / 200) * 100)}%`,
+   609→                            }}
+   610→                            transition={{ duration: 1, delay: 0.5 }}
+   611→                            className="h-full rounded-full"
+   612→                            style={{ backgroundColor: exam.color }}
+   613→                          />
+   614→                        </div>
+   615→                      </div>
+   616→                    </div>
+   617→                  ))}
+   618→                </CardContent>
+   619→              </Card>
+   620→            </motion.div>
+   621→
+   622→            {/* Recent Activity */}
+   623→            <motion.div
+   624→              initial={{ opacity: 0, x: 20 }}
+   625→              animate={{ opacity: 1, x: 0 }}
+   626→              transition={{ duration: 0.5, delay: 0.4 }}
+   627→            >
+   628→              <Card className="border-0 shadow-md">
+   629→                <CardHeader className="pb-2">
+   630→                  <div className="flex items-center justify-between">
+   631→                    <CardTitle className="text-lg flex items-center gap-2">
+   632→                      <Clock className="w-5 h-5 text-agri-green" />
+   633→                      Recent Activity
+   634→                    </CardTitle>
+   635→                    <Button variant="ghost" size="sm" className="text-agri-green hover:text-agri-green-light text-xs">
+   636→                      See All
+   637→                    </Button>
+   638→                  </div>
+   639→                </CardHeader>
+   640→                <CardContent>
+   641→                  <div className="space-y-3">
+   642→                    {activities.slice(0, 4).map((activity) => (
+   643→                      <div
+   644→                        key={activity.id}
+   645→                        className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+   646→                      >
+   647→                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+   648→                          {activity.icon}
+   649→                        </div>
+   650→                        <div className="flex-1 min-w-0">
+   651→                          <p className="text-sm font-medium leading-tight">{activity.title}</p>
+   652→                          <p className="text-xs text-muted-foreground line-clamp-1">
+   653→                            {activity.description}
+   654→                          </p>
+   655→                          <p className="text-xs text-muted-foreground/70 mt-0.5">
+   656→                            {activity.timestamp}
+   657→                          </p>
+   658→                        </div>
+   659→                      </div>
+   660→                    ))}
+   661→                  </div>
+   662→                </CardContent>
+   663→              </Card>
+   664→            </motion.div>
+   665→
+   666→            {/* Recommended Materials */}
+   667→            <motion.div
+   668→              initial={{ opacity: 0, x: 20 }}
+   669→              animate={{ opacity: 1, x: 0 }}
+   670→              transition={{ duration: 0.5, delay: 0.5 }}
+   671→            >
+   672→              <Card className="border-0 shadow-md">
+   673→                <CardHeader className="pb-2">
+   674→                  <CardTitle className="text-lg flex items-center gap-2">
+   675→                    <FileText className="w-5 h-5 text-agri-green" />
+   676→                    Recommended
+   677→                  </CardTitle>
+   678→                </CardHeader>
+   679→                <CardContent className="space-y-3">
+   680→                  {recommendedMaterials.map((material) => (
+   681→                    <div
+   682→                      key={material.id}
+   683→                      className="group p-3 rounded-xl border hover:border-agri-green/30 transition-all cursor-pointer"
+   684→                    >
+   685→                      <div className="flex items-start gap-3">
+   686→                        <div className="w-10 h-10 rounded-lg bg-agri-green/10 flex items-center justify-center flex-shrink-0">
+   687→                          <FileText className="w-5 h-5 text-agri-green" />
+   688→                        </div>
+   689→                        <div className="flex-1 min-w-0">
+   690→                          <h4 className="font-medium text-sm group-hover:text-agri-green transition-colors line-clamp-2">
+   691→                            {material.title}
+   692→                          </h4>
+   693→                          <div className="flex items-center gap-3 mt-1">
+   694→                            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+   695→                              {material.type}
+   696→                            </Badge>
+   697→                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+   698→                              <Download className="w-3 h-3" /> {material.downloads}
+   699→                            </span>
+   700→                            <span className="text-xs text-agri-gold flex items-center gap-0.5">
+   701→                              <Star className="w-3 h-3 fill-current" /> {material.rating}
+   702→                            </span>
+   703→                          </div>
+   704→                        </div>
+   705→                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+   706→                      </div>
+   707→                    </div>
+   708→                  ))}
+   709→                </CardContent>
+   710→              </Card>
+   711→            </motion.div>
+   712→          </div>
+   713→        </div>
+   714→      </div>
+   715→    </div>
+   716→  );
+   717→}
+   718→

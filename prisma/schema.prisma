@@ -1,0 +1,614 @@
+// AgriVerse Academy - India's Largest ICAR Learning Platform
+// Complete Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  STUDENT
+  ADMIN
+  MODERATOR
+}
+
+enum MaterialType {
+  BOOK
+  NOTE
+  PYQ
+  VIDEO
+  PRACTICAL
+  QUESTION_BANK
+}
+
+enum MaterialStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BookmarkType {
+  MATERIAL
+  QUESTION
+  NOTE
+}
+
+enum TestStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum QuizType {
+  DAILY
+  TOPIC
+  SUBJECT
+}
+
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ALL_TIME
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Relevance {
+  ICAR
+  AGRICULTURE
+  GENERAL
+}
+
+// ============================================
+// CORE MODELS
+// ============================================
+
+model User {
+  id                    String       @id @default(cuid())
+  email                 String       @unique
+  name                  String?
+  passwordHash          String?
+  phone                 String?
+  role                  Role         @default(STUDENT)
+  avatar                String?
+  bio                   String?
+  departmentId          String?
+  university            String?
+  yearOfStudy           Int?
+  coins                 Int          @default(0)
+  xp                    Int          @default(0)
+  level                 Int          @default(1)
+  streak                Int          @default(0)
+  isVerified            Boolean      @default(false)
+  isActive              Boolean      @default(true)
+  emailVerified         Boolean      @default(false)
+  emailVerificationToken String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  lastLoginAt           DateTime?
+
+  // Relations
+  department            Department?  @relation(fields: [departmentId], references: [id])
+  bookmarks             Bookmark[]
+  downloads             Download[]
+  testAttempts          TestAttempt[]
+  quizResults           QuizResult[]
+  leaderboardEntries    LeaderboardEntry[]
+  userAchievements      UserAchievement[]
+  notifications         Notification[]
+  blogPosts             BlogPost[]
+  comments              Comment[]
+  forumPosts            ForumPost[]
+  forumReplies          ForumReply[]
+  adminLogs             AdminLog[]
+
+  @@index([departmentId])
+  @@index([email])
+  @@index([role])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  icon        String?
+  description String?
+  color       String?
+  semesters   Int      @default(8)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  studyMaterials StudyMaterial[]
+  mockTests    MockTest[]
+
+  @@index([slug])
+  @@index([sortOrder])
+}
+
+model CompetitiveExam {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  fullName    String?
+  description String?
+  icon        String?
+  color       String?
+  eligibility String?
+  pattern     String?
+  syllabus    String?  // JSON string
+  features    String?  // JSON string
+  difficulty  String?
+  duration    Int?     // in minutes
+  marks       Int?
+  isActive    Boolean  @default(true)
+  popular     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  studyMaterials StudyMaterial[]
+  mockTests      MockTest[]
+  leaderboardEntries LeaderboardEntry[]
+
+  @@index([slug])
+  @@index([popular])
+}
+
+// ============================================
+// STUDY MATERIAL & RESOURCES
+// ============================================
+
+model StudyMaterial {
+  id            String        @id @default(cuid())
+  title         String
+  description   String?
+  type          MaterialType
+  departmentId  String?
+  examId        String?
+  semester      Int?
+  subject       String?
+  unit          String?
+  chapter       String?
+  topic         String?
+  fileUrl       String?
+  driveUrl      String?
+  thumbnailUrl  String?
+  fileSize      Int?          // in bytes
+  pageCount     Int?
+  author        String?
+  edition       String?
+  publisher     String?
+  language      String        @default("English")
+  downloadsCount Int          @default(0)
+  viewsCount    Int           @default(0)
+  rating        Float         @default(0)
+  isPremium     Boolean       @default(false)
+  price         Float         @default(0)
+  status        MaterialStatus @default(DRAFT)
+  uploadedBy    String?
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  exam          CompetitiveExam? @relation(fields: [examId], references: [id])
+  bookmarks     Bookmark[]
+  downloads     Download[]
+
+  @@index([departmentId])
+  @@index([examId])
+  @@index([type])
+  @@index([status])
+  @@index([subject])
+  @@index([semester])
+}
+
+model Bookmark {
+  id        String      @id @default(cuid())
+  userId    String
+  materialId String
+  type      BookmarkType @default(MATERIAL)
+  createdAt DateTime    @default(now())
+
+  // Relations
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material  StudyMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+  @@index([userId])
+  @@index([materialId])
+}
+
+model Download {
+  id          String   @id @default(cuid())
+  userId      String
+  materialId  String
+  downloadedAt DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material    StudyMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([materialId])
+  @@index([downloadedAt])
+}
+
+// ============================================
+// MOCK TESTS & QUESTIONS
+// ============================================
+
+model MockTest {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?
+  departmentId    String?
+  examId          String?
+  subject         String?
+  totalQuestions  Int        @default(0)
+  totalMarks      Int        @default(0)
+  duration        Int?       // in minutes
+  negativeMarking Float      @default(0)
+  difficulty      String?
+  status          TestStatus @default(DRAFT)
+  createdBy       String?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  exam            CompetitiveExam? @relation(fields: [examId], references: [id])
+  questions       Question[]
+  testAttempts    TestAttempt[]
+
+  @@index([departmentId])
+  @@index([examId])
+  @@index([status])
+  @@index([subject])
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  testId        String
+  questionText  String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String   // A, B, C, or D
+  explanation   String?
+  hint          String?
+  subject       String?
+  chapter       String?
+  topic         String?
+  difficulty    String?
+  marks         Float    @default(1)
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+
+  // Relations
+  test          MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([subject])
+  @@index([difficulty])
+}
+
+model TestAttempt {
+  id            String        @id @default(cuid())
+  userId        String
+  testId        String
+  startedAt     DateTime      @default(now())
+  completedAt   DateTime?
+  timeTaken     Int?          // in seconds
+  status        AttemptStatus @default(IN_PROGRESS)
+  totalScore    Float?
+  obtainedScore Float?
+  percentage    Float?
+  rank          Int?
+  answers       String?       // JSON string storing user's selected answers
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test          MockTest      @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([testId])
+  @@index([status])
+}
+
+// ============================================
+// QUIZ & GAMIFICATION
+// ============================================
+
+model QuizResult {
+  id              String    @id @default(cuid())
+  userId          String
+  quizType        QuizType
+  score           Int
+  totalQuestions  Int
+  correctAnswers  Int
+  wrongAnswers    Int
+  timeTaken       Int       // in seconds
+  date            DateTime @default(now())
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizType])
+  @@index([date])
+}
+
+model LeaderboardEntry {
+  id            String           @id @default(cuid())
+  userId        String
+  examId        String?
+  period        LeaderboardPeriod
+  score         Int              @default(0)
+  rank          Int
+  previousRank  Int?
+  change        Int              @default(0)
+
+  // Relations
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam          CompetitiveExam? @relation(fields: [examId], references: [id])
+
+  @@unique([userId, examId, period])
+  @@index([userId])
+  @@index([examId])
+  @@index([period])
+  @@index([rank])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  category    String?
+  condition   String?  // JSON string defining unlock condition
+  points      Int      @default(0)
+  rarity      Rarity   @default(COMMON)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@index([rarity])
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  progress      Float    @default(0) // 0-100 percentage
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  actionUrl String?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// BLOG & CONTENT
+// ============================================
+
+model BlogPost {
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  excerpt       String?
+  content       String?
+  featuredImage String?
+  authorId      String
+  categoryId    String?
+  tags          String?    // JSON array
+  viewsCount    Int        @default(0)
+  likesCount    Int        @default(0)
+  commentsCount Int        @default(0)
+  status        BlogStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  author        User       @relation(fields: [authorId], references: [id])
+  comments      Comment[]
+
+  @@index([authorId])
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  userId      String
+  postId      String
+  parentId    String?
+  content     String
+  likesCount  Int      @default(0)
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent      Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReplies")
+
+  @@index([userId])
+  @@index([postId])
+  @@index([parentId])
+}
+
+// ============================================
+// FORUM
+// ============================================
+
+model ForumPost {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String
+  content         String
+  category        String?
+  tags            String?  // JSON array
+  viewsCount      Int      @default(0)
+  repliesCount    Int      @default(0)
+  likesCount      Int      @default(0)
+  isResolved      Boolean  @default(false)
+  isPinned        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastActivityAt  DateTime @default(now())
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies         ForumReply[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([isResolved])
+  @@index([isPinned])
+  @@index([createdAt])
+}
+
+model ForumReply {
+  id               String   @id @default(cuid())
+  postId           String
+  userId           String
+  parentId         String?
+  content          String
+  likesCount       Int      @default(0)
+  isAcceptedAnswer Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  post             ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent           ForumReply? @relation("ForumReplyReplies", fields: [parentId], references: [id])
+  replies          ForumReply[] @relation("ForumReplyReplies")
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+// ============================================
+// CURRENT AFFAIRS
+// ============================================
+
+model CurrentAffair {
+  id          String     @id @default(cuid())
+  title       String
+  summary     String?
+  content     String?
+  source      String?
+  date        DateTime
+  category    String?
+  tags        String?    // JSON array
+  imageUrl    String?
+  relevance   Relevance  @default(ICAR)
+  importance  Int        @default(0) // 1-5 scale
+  createdAt   DateTime   @default(now())
+
+  @@index([date])
+  @@index([category])
+  @@index([relevance])
+  @@index([importance])
+}
+
+// ============================================
+// ADMIN & AUDIT
+// ============================================
+
+model AdminLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  entityType String?
+  entityId   String?
+  details    String?  // JSON string
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  admin      User     @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}

@@ -1,0 +1,665 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import * as React from "react";
+     4→     4→import Link from "next/link";
+     5→     5→import Image from "next/image";
+     6→     6→import { useTheme } from "next-themes";
+     7→     7→import { motion, AnimatePresence } from "framer-motion";
+     8→     8→import {
+     9→     9→  Menu,
+    10→    10→  Search,
+    11→    11→  Sun,
+    12→    12→  Moon,
+    13→    13→  Leaf,
+    14→    14→  X,
+    15→    15→  LogIn,
+    16→    16→  UserPlus,
+    17→    17→  ChevronDown,
+    18→    18→  BookOpen,
+    19→    19→  FileText,
+    20→    20→  GraduationCap,
+    21→    21→  ClipboardList,
+    22→    22→  HelpCircle,
+    23→    23→  Clock,
+    24→    24→  Newspaper,
+    25→    25→  Download,
+    26→    26→} from "lucide-react";
+    27→    27→
+    28→    28→import { cn } from "@/lib/utils";
+    29→    29→import { Button } from "@/components/ui/button";
+    30→    30→import { Input } from "@/components/ui/input";
+    31→    31→import {
+    32→    32→  Dialog,
+    33→    33→  DialogContent,
+    34→    34→  DialogHeader,
+    35→    35→  DialogTitle,
+    36→    36→  DialogDescription,
+    37→    37→} from "@/components/ui/dialog";
+    38→    38→import {
+    39→    39→  NavigationMenu,
+    40→    40→  NavigationMenuContent,
+    41→    41→  NavigationMenuItem,
+    42→    42→  NavigationMenuLink,
+    43→    43→  NavigationMenuList,
+    44→    44→  NavigationMenuTrigger,
+    45→    45→  navigationMenuTriggerStyle,
+    46→    46→} from "@/components/ui/navigation-menu";
+    47→    47→import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+    48→    48→import { Separator } from "@/components/ui/separator";
+    49→    49→import { ScrollArea } from "@/components/ui/scroll-area";
+    50→    50→import { departments } from "@/data/departments";
+    51→    51→import { competitiveExams } from "@/data/exams";
+    52→    52→import { MobileNav } from "./mobile-nav";
+    53→    53→
+    54→    54→// Navigation items configuration
+    55→    55→const navItems = [
+    56→    56→  { label: "Home", href: "/" },
+    57→    57→  { label: "Departments", href: "/departments", hasDropdown: true },
+    58→    58→  { label: "Competitive Exams", href: "/exams", hasDropdown: true },
+    59→    59→  { label: "Study Materials", href: "/study-materials" },
+    60→    60→  { label: "Books", href: "/books" },
+    61→    61→  { label: "Test Series", href: "/test-series" },
+    62→    62→  { label: "Mock Tests", href: "/mock-tests" },
+    63→    63→  { label: "MCQ Practice", href: "/mcq-practice" },
+    64→    64→  { label: "PYQs", href: "/pyqs" },
+    65→    65→  { label: "Current Affairs", href: "/current-affairs" },
+    66→    66→  { label: "Blog", href: "/blog" },
+    67→    67→  { label: "Downloads", href: "/downloads" },
+    68→    68→];
+    69→    69→
+    70→    70→// Popular exams for quick access
+    71→    71→const popularExams = competitiveExams.filter((exam) => exam.popular);
+    72→    72→
+    73→    73→// Core departments to show in dropdown
+    74→    74→const coreDepartments = departments.slice(0, 8);
+    75→    75→const allDepartments = departments;
+    76→    76→
+    77→    77→export function Navbar() {
+    78→    78→  const [isScrolled, setIsScrolled] = React.useState(false);
+    79→    79→  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+    80→    80→  const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
+    81→    81→  const [searchQuery, setSearchQuery] = React.useState("");
+    82→    82→  const { theme, setTheme } = useTheme();
+    83→    83→  const [mounted, setMounted] = React.useState(false);
+    84→    84→
+    85→    85→  // Handle mount state for theme toggle
+    86→    86→  React.useEffect(() => {
+    87→    87→    setMounted(true);
+    88→    88→  }, []);
+    89→    89→
+    90→    90→  // Scroll detection for glassmorphism effect
+    91→    91→  React.useEffect(() => {
+    92→    92→    const handleScroll = () => {
+    93→    93→      setIsScrolled(window.scrollY > 20);
+    94→    94→    };
+    95→    95→
+    96→    96→    window.addEventListener("scroll", handleScroll, { passive: true });
+    97→    97→    return () => window.removeEventListener("scroll", handleScroll);
+    98→    98→  }, []);
+    99→    99→
+   100→   100→  // Close mobile nav on resize
+   101→   101→  React.useEffect(() => {
+   102→   102→    const handleResize = () => {
+   103→   103→      if (window.innerWidth >= 1024) {
+   104→   104→        setIsMobileNavOpen(false);
+   105→   105→      }
+   106→   106→    };
+   107→   107→
+   108→   108→    window.addEventListener("resize", handleResize);
+   109→   109→    return () => window.removeEventListener("resize", handleResize);
+   110→   110→  }, []);
+   111→   111→
+   112→   112→  const toggleTheme = () => {
+   113→   113→    setTheme(theme === "dark" ? "light" : "dark");
+   114→   114→  };
+   115→   115→
+   116→   116→  return (
+   117→   117→    <>
+   118→   118→      <motion.header
+   119→   119→        initial={{ y: -100 }}
+   120→   120→        animate={{ y: 0 }}
+   121→   121→        transition={{ duration: 0.5, ease: "easeOut" }}
+   122→   122→        className={cn(
+   123→   123→          "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
+   124→   124→          isScrolled
+   125→   125→            ? "glass-strong shadow-lg"
+   126→   126→            : "bg-transparent"
+   127→   127→        )}
+   128→   128→      >
+   129→   129→        <div className="container mx-auto px-4">
+   130→   130→          <nav className="flex h-16 md:h-18 lg:h-20 items-center justify-between">
+   131→   131→            {/* Logo */}
+   132→   132→            <Link href="/" className="flex items-center gap-2 group">
+   133→   133→              <motion.div
+   134→   134→                whileHover={{ rotate: 15, scale: 1.1 }}
+   135→   135→                transition={{ type: "spring", stiffness: 300 }}
+   136→   136→                className="relative"
+   137→   137→              >
+   138→   138→                <Image
+   139→   139→                  src="/images/logo.png"
+   140→   140→                  alt="AgriVerse Academy Logo"
+   141→   141→                  width={40}
+   142→   142→                  height={40}
+   143→   143→                  className="h-9 w-9 md:h-10 md:w-10 rounded-lg object-contain"
+   144→   144→                />
+   145→   145→              </motion.div>
+   146→   146→              <div className="flex flex-col">
+   147→   147→                <span className="text-lg md:text-xl font-bold gradient-text leading-tight">
+   148→   148→                  AgriVerse
+   149→   149→                </span>
+   150→   150→                <span className="text-[10px] md:text-xs text-muted-foreground font-medium -mt-0.5">
+   151→   151→                  Academy
+   152→   152→                </span>
+   153→   153→              </div>
+   154→   154→            </Link>
+   155→   155→
+   156→   156→            {/* Desktop Navigation */}
+   157→   157→            <div className="hidden lg:flex items-center">
+   158→   158→              <NavigationMenu>
+   159→   159→                <NavigationMenuList className="gap-1">
+   160→   160→                  {/* Home */}
+   161→   161→                  <NavigationMenuItem>
+   162→   162→                    <Link href="/" legacyBehavior passHref>
+   163→   163→                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+   164→   164→                        Home
+   165→   165→                      </NavigationMenuLink>
+   166→   166→                    </Link>
+   167→   167→                  </NavigationMenuItem>
+   168→   168→
+   169→   169→                  {/* Departments Dropdown */}
+   170→   170→                  <NavigationMenuItem>
+   171→   171→                    <NavigationMenuTrigger>Departments</NavigationMenuTrigger>
+   172→   172→                    <NavigationMenuContent>
+   173→   173→                      <div className="grid w-[600px] gap-3 p-4 md:w-[700px] md:grid-cols-2 lg:w-[800px]">
+   174→   174→                        <div className="space-y-3">
+   175→   175→                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+   176→   176→                            <Leaf className="h-4 w-4" />
+   177→   177→                            Popular Departments
+   178→   178→                          </h4>
+   179→   179→                          <ul className="grid gap-1">
+   180→   180→                            {coreDepartments.map((dept) => (
+   181→   181→                              <li key={dept.id}>
+   182→   182→                                <Link href={`/departments/${dept.slug}`} legacyBehavior passHref>
+   183→   183→                                  <NavigationMenuLink
+   184→   184→                                    className="flex items-center gap-3 rounded-md p-3 hover:bg-accent transition-colors group"
+   185→   185→                                  >
+   186→   186→                                    <span className="text-xl">{dept.icon}</span>
+   187→   187→                                    <div>
+   188→   188→                                      <p className="font-medium text-sm group-hover:text-primary transition-colors">
+   189→   189→                                        {dept.name}
+   190→   190→                                      </p>
+   191→   191→                                      <p className="text-xs text-muted-foreground line-clamp-1">
+   192→   192→                                        {dept.description.slice(0, 60)}...
+   193→   193→                                      </p>
+   194→   194→                                    </div>
+   195→   195→                                  </NavigationMenuLink>
+   196→   196→                                </Link>
+   197→   197→                              </li>
+   198→   198→                            ))}
+   199→   199→                          </ul>
+   200→   200→                        </div>
+   201→   201→                        <div className="space-y-3">
+   202→   202→                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+   203→   203→                            <GraduationCap className="h-4 w-4" />
+   204→   204→                            Quick Links
+   205→   205→                          </h4>
+   206→   206→                          <div className="grid gap-2">
+   207→   207→                            <Link
+   208→   208→                              href="/departments"
+   209→   209→                              legacyBehavior
+   210→   210→                              passHref
+   211→   211→                            >
+   212→   212→                              <NavigationMenuLink
+   213→   213→                                className="block rounded-md p-3 hover:bg-accent transition-colors border border-dashed"
+   214→   214→                              >
+   215→   215→                                <p className="font-medium text-sm text-primary">
+   216→   216→                                  View All Departments
+   217→   217→                                </p>
+   218→   218→                                <p className="text-xs text-muted-foreground">
+   219→   219→                                  Explore {allDepartments.length}+ ICAR disciplines
+   220→   220→                                </p>
+   221→   221→                              </NavigationMenuLink>
+   222→   222→                            </Link>
+   223→   223→                            <div className="rounded-md bg-secondary/50 p-3">
+   224→   224→                              <p className="text-xs font-medium text-secondary-foreground mb-2">
+   225→   225→                                By Category
+   226→   226→                              </p>
+   227→   227→                              <div className="flex flex-wrap gap-1.5">
+   228→   228→                                {["Core Sciences", "Life Sciences", "Engineering"].map(
+   229→   229→                                  (cat) => (
+   230→   230→                                      <span
+   231→   231→                                        key={cat}
+   232→   232→                                        className="inline-flex items-center rounded-full bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+   233→   233→                                      >
+   234→   234→                                        {cat}
+   235→   235→                                      </span>
+   236→   236→                                    )
+   237→   237→                                )}
+   238→   238→                              </div>
+   239→   239→                            </div>
+   240→   240→                          </div>
+   241→   241→                        </div>
+   242→   242→                      </div>
+   243→   243→                    </NavigationMenuContent>
+   244→   244→                  </NavigationMenuItem>
+   245→   245→
+   246→   246→                  {/* Competitive Exams Dropdown */}
+   247→   247→                  <NavigationMenuItem>
+   248→   248→                    <NavigationMenuTrigger>Competitive Exams</NavigationMenuTrigger>
+   249→   249→                    <NavigationMenuContent>
+   250→   250→                      <div className="grid w-[500px] gap-3 p-4 md:w-[600px] md:grid-cols-2">
+   251→   251→                        <div className="space-y-3">
+   252→   252→                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+   253→   253→                            <GraduationCap className="h-4 w-4" />
+   254→   254→                            Popular Exams
+   255→   255→                          </h4>
+   256→   256→                          <ul className="grid gap-1">
+   257→   257→                            {popularExams.slice(0, 6).map((exam) => (
+   258→   258→                              <li key={exam.id}>
+   259→   259→                                <Link href={`/exams/${exam.slug}`} legacyBehavior passHref>
+   260→   260→                                  <NavigationMenuLink
+   261→   261→                                    className="flex items-center gap-3 rounded-md p-3 hover:bg-accent transition-colors group"
+   262→   262→                                  >
+   263→   263→                                    <span className="text-lg">{exam.icon}</span>
+   264→   264→                                    <div className="flex-1 min-w-0">
+   265→   265→                                      <p className="font-medium text-sm group-hover:text-primary transition-colors">
+   266→   266→                                        {exam.name}
+   267→   267→                                      </p>
+   268→   268→                                      <p className="text-xs text-muted-foreground truncate">
+   269→   269→                                        {exam.fullName}
+   270→   270→                                      </p>
+   271→   271→                                    </div>
+   272→   272→                                    <span
+   273→   273→                                      className={cn(
+   274→   274→                                        "text-[10px] px-1.5 py-0.5 rounded font-medium",
+   275→   275→                                        exam.difficulty === "Easy" && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+   276→   276→                                        exam.difficulty === "Medium" && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+   277→   277→                                        exam.difficulty === "Hard" && "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+   278→   278→                                      )}
+   279→   279→                                    >
+   280→   280→                                      {exam.difficulty}
+   281→   281→                                    </span>
+   282→   282→                                  </NavigationMenuLink>
+   283→   283→                                </Link>
+   284→   284→                              </li>
+   285→   285→                            ))}
+   286→   286→                          </ul>
+   287→   287→                        </div>
+   288→   288→                        <div className="space-y-3">
+   289→   289→                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+   290→   290→                            <BookOpen className="h-4 w-4" />
+   291→   291→                            Exam Categories
+   292→   292→                          </h4>
+   293→   293→                          <div className="grid gap-2">
+   294→   294→                            {[
+   295→   295→                              { name: "ICAR Exams", icon: "🎓", count: 3, href: "/exams?category=icar" },
+   296→   296→                              { name: "CSIR/DBT", icon: "🧪", count: 2, href: "/exams?category=csir" },
+   297→   297→                              { name: "GATE Exams", icon: "⚡", count: 2, href: "/exams?category=gate" },
+   298→   298→                              { name: "NET Exams", icon: "📋", count: 3, href: "/exams?category=net" },
+   299→   299→                            ].map((cat) => (
+   300→   300→                              <Link key={cat.name} href={cat.href} legacyBehavior passHref>
+   301→   301→                                <NavigationMenuLink
+   302→   302→                                  className="flex items-center justify-between rounded-md p-3 hover:bg-accent transition-colors"
+   303→   303→                                >
+   304→   304→                                  <div className="flex items-center gap-2">
+   305→   305→                                    <span>{cat.icon}</span>
+   306→   306→                                    <span className="text-sm font-medium">{cat.name}</span>
+   307→   307→                                  </div>
+   308→   308→                                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+   309→   309→                                    {cat.count}
+   310→   310→                                  </span>
+   311→   311→                                </NavigationMenuLink>
+   312→   312→                              </Link>
+   313→   313→                            ))}
+   314→   314→                          </div>
+   315→   315→                          <Link
+   316→   316→                            href="/exams"
+   317→   317→                            legacyBehavior
+   318→   318→                            passHref
+   319→   319→                            className="mt-2 block"
+   320→   320→                          >
+   321→   321→                            <NavigationMenuLink
+   322→   322→                              className="flex items-center justify-center rounded-md p-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+   323→   323→                            >
+   324→   324→                              <span className="text-sm font-medium">View All Exams</span>
+   325→   325→                              <ChevronDown className="ml-1 h-4 w-4 rotate-[-90deg]" />
+   326→   326→                            </NavigationMenuLink>
+   327→   327→                          </Link>
+   328→   328→                        </div>
+   329→   329→                      </div>
+   330→   330→                    </NavigationMenuContent>
+   331→   331→                  </NavigationMenuItem>
+   332→   332→
+   333→   333→                  {/* Study Materials */}
+   334→   334→                  <NavigationMenuItem>
+   335→   335→                    <Link href="/study-materials" legacyBehavior passHref>
+   336→   336→                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+   337→   337→                        <FileText className="mr-1.5 h-4 w-4 hidden xl:inline" />
+   338→   338→                        Study Materials
+   339→   339→                      </NavigationMenuLink>
+   340→   340→                    </Link>
+   341→   341→                  </NavigationMenuItem>
+   342→   342→
+   343→   343→                  {/* Books */}
+   344→   344→                  <NavigationMenuItem>
+   345→   345→                    <Link href="/books" legacyBehavior passHref>
+   346→   346→                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+   347→   347→                        <BookOpen className="mr-1.5 h-4 w-4 hidden xl:inline" />
+   348→   348→                        Books
+   349→   349→                      </NavigationMenuLink>
+   350→   350→                    </Link>
+   351→   351→                  </NavigationMenuItem>
+   352→   352→
+   353→   353→                  {/* Test Series */}
+   354→   354→                  <NavigationMenuItem>
+   355→   355→                    <Link href="/test-series" legacyBehavior passHref>
+   356→   356→                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+   357→   357→                        <ClipboardList className="mr-1.5 h-4 w-4 hidden xl:inline" />
+   358→   358→                        Test Series
+   359→   359→                      </NavigationMenuLink>
+   360→   360→                    </Link>
+   361→   361→                  </NavigationMenuItem>
+   362→   362→
+   363→   363→                  {/* More Items Dropdown */}
+   364→   364→                  <NavigationMenuItem>
+   365→   365→                    <NavigationMenuTrigger>More</NavigationMenuTrigger>
+   366→   366→                    <NavigationMenuContent>
+   367→   367→                      <ul className="grid w-[280px] gap-1 p-2">
+   368→   368→                        {[
+   369→   369→                          { href: "/mock-tests", icon: HelpCircle, label: "Mock Tests", desc: "Practice with timed tests" },
+   370→   370→                          { href: "/mcq-practice", icon: ClipboardList, label: "MCQ Practice", desc: "Topic-wise MCQs" },
+   371→   371→                          { href: "/pyqs", icon: Clock, label: "PYQs", desc: "Previous Year Questions" },
+   372→   372→                          { href: "/current-affairs", icon: Newspaper, label: "Current Affairs", desc: "Daily agriculture updates" },
+   373→   373→                          { href: "/blog", icon: BookOpen, label: "Blog", desc: "Articles & guides" },
+   374→   374→                          { href: "/downloads", icon: Download, label: "Downloads", desc: "Free resources" },
+   375→   375→                        ].map((item) => (
+   376→   376→                          <li key={item.href}>
+   377→   377→                            <Link href={item.href} legacyBehavior passHref>
+   378→   378→                              <NavigationMenuLink
+   379→   379→                                className="flex items-start gap-3 rounded-md p-3 hover:bg-accent transition-colors group"
+   380→   380→                              >
+   381→   381→                                <item.icon className="mt-0.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+   382→   382→                                <div>
+   383→   383→                                  <p className="font-medium text-sm group-hover:text-primary transition-colors">
+   384→   384→                                    {item.label}
+   385→   385→                                  </p>
+   386→   386→                                  <p className="text-xs text-muted-foreground">
+   387→   387→                                    {item.desc}
+   388→   388→                                  </p>
+   389→   389→                                </div>
+   390→   390→                              </NavigationMenuLink>
+   391→   391→                            </Link>
+   392→   392→                          </li>
+   393→   393→                        ))}
+   394→   394→                      </ul>
+   395→   395→                    </NavigationMenuContent>
+   396→   396→                  </NavigationMenuItem>
+   397→   397→                </NavigationMenuList>
+   398→   398→              </NavigationMenu>
+   399→   399→            </div>
+   400→   400→
+   401→   401→            {/* Right Side Actions */}
+   402→   402→            <div className="flex items-center gap-1 sm:gap-2">
+   403→   403→              {/* Theme Toggle */}
+   404→   404→              {mounted && (
+   405→   405→                <Button
+   406→   406→                  variant="ghost"
+   407→   407→                  size="icon"
+   408→   408→                  onClick={toggleTheme}
+   409→   409→                  className="hidden sm:flex"
+   410→   410→                  aria-label="Toggle theme"
+   411→   411→                >
+   412→   412→                  <AnimatePresence mode="wait" initial={false}>
+   413→   413→                    <motion.div
+   414→   414→                      key={theme}
+   415→   415→                      initial={{ y: -20, opacity: 0 }}
+   416→   416→                      animate={{ y: 0, opacity: 1 }}
+   417→   417→                      exit={{ y: 20, opacity: 0 }}
+   418→   418→                      transition={{ duration: 0.2 }}
+   419→   419→                    >
+   420→   420→                      {theme === "dark" ? (
+   421→   421→                        <Sun className="h-5 w-5 text-yellow-500" />
+   422→   422→                      ) : (
+   423→   423→                        <Moon className="h-5 w-5 text-slate-700" />
+   424→   424→                      )}
+   425→   425→                    </motion.div>
+   426→   426→                  </AnimatePresence>
+   427→   427→                </Button>
+   428→   428→              )}
+   429→   429→
+   430→   430→              {/* Search Button */}
+   431→   431→              <Button
+   432→   432→                variant="ghost"
+   433→   433→                size="icon"
+   434→   434→                onClick={() => setIsSearchOpen(true)}
+   435→   435→                aria-label="Open search"
+   436→   436→              >
+   437→   437→                <Search className="h-5 w-5" />
+   438→   438→              </Button>
+   439→   439→
+   440→   440→              {/* Login Button - Hidden on small screens */}
+   441→   441→              <Button
+   442→   442→                variant="ghost"
+   443→   443→                size="sm"
+   444→   444→                className="hidden md:inline-flex"
+   445→   445→                asChild
+   446→   446→              >
+   447→   447→                <Link href="/login">
+   448→   448→                  <LogIn className="mr-1.5 h-4 w-4" />
+   449→   449→                  Login
+   450→   450→                </Link>
+   451→   451→              </Button>
+   452→   452→
+   453→   453→              {/* Register CTA Button - Hidden on small screens */}
+   454→   454→              <Button
+   455→   455→                size="sm"
+   456→   456→                className="hidden sm:inline-flex bg-gradient-to-r from-agri-green to-agri-green-light hover:from-agri-green-light hover:to-agri-emerald shadow-md btn-premium"
+   457→   457→                asChild
+   458→   458→              >
+   459→   459→                <Link href="/register">
+   460→   460→                  <UserPlus className="mr-1.5 h-4 w-4" />
+   461→   461→                  Get Started
+   462→   462→                </Link>
+   463→   463→              </Button>
+   464→   464→
+   465→   465→              {/* Mobile Menu Trigger */}
+   466→   466→              <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+   467→   467→                <SheetTrigger asChild>
+   468→   468→                  <Button
+   469→   469→                    variant="ghost"
+   470→   470→                    size="icon"
+   471→   471→                    className="lg:hidden"
+   472→   472→                    aria-label="Open menu"
+   473→   473→                  >
+   474→   474→                    <Menu className="h-5 w-5" />
+   475→   475→                  </Button>
+   476→   476→                </SheetTrigger>
+   477→   477→                <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0">
+   478→   478→                  <MobileNav onClose={() => setIsMobileNavOpen(false)} />
+   479→   479→                </SheetContent>
+   480→   480→              </Sheet>
+   481→   481→            </div>
+   482→   482→          </nav>
+   483→   483→        </div>
+   484→   484→      </motion.header>
+   485→   485→
+   486→   486→      {/* Search Modal */}
+   487→   487→      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+   488→   488→        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden">
+   489→   489→          <DialogHeader className="p-4 pb-0">
+   490→   490→            <DialogTitle className="flex items-center gap-2">
+   491→   491→              <Search className="h-5 w-5 text-primary" />
+   492→   492→              Search AgriVerse Academy
+   493→   493→            </DialogTitle>
+   494→   494→            <DialogDescription>
+   495→   495→              Find study materials, books, notes, and more
+   496→   496→            </DialogDescription>
+   497→   497→          </DialogHeader>
+   498→   498→          <div className="p-4 pt-2">
+   499→   499→            <div className="relative">
+   500→   500→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   501→   501→              <Input
+   502→   502→                placeholder="Search topics, subjects, exams..."
+   503→   503→                value={searchQuery}
+   504→   504→                onChange={(e) => setSearchQuery(e.target.value)}
+   505→   505→                className="pl-10 pr-10 h-12 text-base"
+   506→   506→                autoFocus
+   507→   507→              />
+   508→   508→              {searchQuery && (
+   509→   509→                <Button
+   510→   510→                  variant="ghost"
+   511→   511→                  size="icon"
+   512→   512→                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+   513→   513→                  onClick={() => setSearchQuery("")}
+   514→   514→                >
+   515→   515→                  <X className="h-4 w-4" />
+   516→   516→                </Button>
+   517→   517→              )}
+   518→   518→            </div>
+   519→   519→
+   520→   520→            {/* Search Suggestions */}
+   521→   521→            {searchQuery.length > 0 && (
+   522→   522→              <div className="mt-4 space-y-4">
+   523→   523→                <div>
+   524→   524→                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+   525→   525→                    Quick Results
+   526→   526→                  </h4>
+   527→   527→                  <div className="space-y-1 max-h-[300px] overflow-auto">
+   528→   528→                    {[
+   529→   529→                      ...departments
+   530→   530→                        .filter((d) =>
+   531→   531→                          d.name.toLowerCase().includes(searchQuery.toLowerCase())
+   532→   532→                        )
+   533→   533→                        .slice(0, 3)
+   534→   534→                        .map((d) => ({
+   535→   535→                          type: "Department" as const,
+   536→   536→                          title: d.name,
+   537→   537→                          href: `/departments/${d.slug}`,
+   538→   538→                          icon: d.icon,
+   539→   539→                        })),
+   540→   540→                      ...competitiveExams
+   541→   541→                        .filter((e) =>
+   542→   542→                          e.name.toLowerCase().includes(searchQuery.toLowerCase())
+   543→   543→                        )
+   544→   544→                        .slice(0, 3)
+   545→   545→                        .map((e) => ({
+   546→   546→                          type: "Exam" as const,
+   547→   547→                          title: e.name,
+   548→   548→                          href: `/exams/${e.slug}`,
+   549→   549→                          icon: e.icon,
+   550→   550→                        })),
+   551→   551→                    ].slice(0, 5).length > 0 ? (
+   552→   552→                      [
+   553→   553→                        ...departments
+   554→   554→                          .filter((d) =>
+   555→   555→                            d.name.toLowerCase().includes(searchQuery.toLowerCase())
+   556→   556→                          )
+   557→   557→                          .slice(0, 3)
+   558→   558→                          .map((d) => ({
+   559→   559→                            type: "Department" as const,
+   560→   560→                            title: d.name,
+   561→   561→                            href: `/departments/${d.slug}`,
+   562→   562→                            icon: d.icon,
+   563→   563→                          })),
+   564→   564→                        ...competitiveExams
+   565→   565→                          .filter((e) =>
+   566→   566→                            e.name.toLowerCase().includes(searchQuery.toLowerCase())
+   567→   567→                          )
+   568→   568→                          .slice(0, 3)
+   569→   569→                          .map((e) => ({
+   570→   570→                            type: "Exam" as const,
+   571→   571→                            title: e.name,
+   572→   572→                            href: `/exams/${e.slug}`,
+   573→   573→                            icon: e.icon,
+   574→   574→                          })),
+   575→   575→                      ]
+   576→   576→                        .slice(0, 5)
+   577→   577→                        .map((item, idx) => (
+   578→   578→                          <Link
+   579→   579→                            key={idx}
+   580→   580→                            href={item.href}
+   581→   581→                            onClick={() => setIsSearchOpen(false)}
+   582→   582→                            className="flex items-center gap-3 rounded-lg p-3 hover:bg-accent transition-colors"
+   583→   583→                          >
+   584→   584→                            <span className="text-lg">{item.icon}</span>
+   585→   585→                            <div>
+   586→   586→                              <p className="font-medium text-sm">{item.title}</p>
+   587→   587→                              <p className="text-xs text-muted-foreground">
+   588→   588→                                {item.type}
+   589→   589→                              </p>
+   590→   590→                            </div>
+   591→   591→                          </Link>
+   592→   592→                        ))
+   593→   593→                    ) : (
+   594→   594→                      <p className="text-sm text-muted-foreground text-center py-4">
+   595→   595→                        No results found for "{searchQuery}"
+   596→   596→                      </p>
+   597→   597→                    )}
+   598→   598→                  </div>
+   599→   599→                </div>
+   600→   600→
+   601→   601→                <Separator />
+   602→   602→
+   603→   603→                <div>
+   604→   604→                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+   605→   605→                    Popular Searches
+   606→   606→                  </h4>
+   607→   607→                  <div className="flex flex-wrap gap-2">
+   608→   608→                    {["ICAR JRF", "Agronomy", "Plant Pathology", "AIEEA"].map(
+   609→   609→                      (term) => (
+   610→   610→                        <Button
+   611→   611→                          key={term}
+   612→   612→                          variant="outline"
+   613→   613→                          size="sm"
+   614→   614→                          className="text-xs"
+   615→   615→                          onClick={() => setSearchQuery(term)}
+   616→   616→                        >
+   617→   617→                          {term}
+   618→   618→                        </Button>
+   619→   619→                      )
+   620→   620→                    )}
+   621→   621→                  </div>
+   622→   622→                </div>
+   623→   623→              </div>
+   624→   624→            )}
+   625→   625→
+   626→   626→            {/* Default State */}
+   627→   627→            {searchQuery.length === 0 && (
+   628→   628→              <div className="mt-4 space-y-4">
+   629→   629→                <div>
+   630→   630→                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+   631→   631→                    Trending Topics
+   632→   632→                  </h4>
+   633→   633→                  <div className="grid grid-cols-2 gap-2">
+   634→   634→                    {[
+   635→   635→                      { label: "ICAR JRF Prep", href: "/exams/icar-jrf", emoji: "🎯" },
+   636→   636→                      { label: "Agriculture Notes", href: "/study-materials", emoji: "📝" },
+   637→   637→                      { label: "Mock Tests", href: "/mock-tests", emoji: "📋" },
+   638→   638→                      { label: "PYQ Bank", href: "/pyqs", emoji: "🗂️" },
+   639→   639→                    ].map((item) => (
+   640→   640→                      <Link
+   641→   641→                        key={item.label}
+   642→   642→                        href={item.href}
+   643→   643→                        onClick={() => setIsSearchOpen(false)}
+   644→   644→                        className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent transition-colors"
+   645→   645→                      >
+   646→   646→                        <span>{item.emoji}</span>
+   647→   647→                        <span className="text-sm font-medium">{item.label}</span>
+   648→   648→                      </Link>
+   649→   649→                    ))}
+   650→   650→                  </div>
+   651→   651→                </div>
+   652→   652→              </div>
+   653→   653→            )}
+   654→   654→          </div>
+   655→   655→        </DialogContent>
+   656→   656→      </Dialog>
+   657→   657→
+   658→   658→      {/* Spacer for fixed header */}
+   659→   659→      <div className="h-16 md:h-18 lg:h-20" />
+   660→   660→    </>
+   661→   661→  );
+   662→   662→}
+   663→   663→
+   664→   664→export default Navbar;
+   665→   665→
